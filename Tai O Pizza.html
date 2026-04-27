@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tai O Pizza Shop</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel for in-browser JSX compilation -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        @keyframes bounce-short {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-10px); }
+        }
+        .animate-bounce-short { animation: bounce-short 0.5s ease-in-out 2; }
+    </style>
+</head>
+<body class="bg-orange-50 font-sans overflow-hidden">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        function App() {
+          const [step, setStep] = useState(0);
+          const [balance, setBalance] = useState(40000);
+          const [flour, setFlour] = useState([]); 
+          const [shopSize, setShopSize] = useState('');
+          
+          const [is, setIs] = useState({
+            sales: 0,
+            otherRev: 0,
+            cogs: 0,
+            expRent: 0,
+            expLicense: 0,
+            expTransport: 0,
+            expAds: 0,
+            expInsurance: 0,
+            expBills: 0,
+            expMedical: 0,
+            expInterest: 0
+          });
+
+          const [state, setState] = useState({
+            hasLorry: false,
+            adMonths: 0,
+            hasMedIns: false,
+            hasTraIns: false,
+            chosePanadol: false,
+            hasRenovation: false,
+            hasBakingClass: false,
+            joinedShopComp: false,
+            joinedFoodFest: false,
+          });
+
+          const [quizState, setQuizState] = useState(null);
+          const [summaryData, setSummaryData] = useState({});
+          
+          const [insSelections, setInsSelections] = useState({ med: false, tra: false });
+
+          // --- Activity Log State & Helpers ---
+          const [logs, setLogs] = useState([]);
+
+          useEffect(() => {
+            // Initial log on mount
+            addLog("Game started! Welcome to Tai O Pizza Shop.", "info");
+          }, []);
+
+          const addLog = (msg, type = 'info') => {
+            const time = new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            setLogs(prev => [...prev, { msg, type, time }]);
+          };
+
+          const updateIs = (category, amount) => {
+            setIs(prev => ({ ...prev, [category]: prev[category] + amount }));
+          };
+
+          const processTransaction = (cost, isCategory, desc, updateStateObj = {}, nextStepOverride = null) => {
+            setBalance(b => b - cost);
+            if (isCategory) updateIs(isCategory, cost);
+            if (Object.keys(updateStateObj).length > 0) setState(prev => ({ ...prev, ...updateStateObj }));
+            
+            // Logging the transaction
+            if (desc) {
+                if (cost > 0) addLog(`${desc} (-$${cost})`, 'expense');
+                else if (cost < 0) addLog(`${desc} (+$${Math.abs(cost)})`, 'income');
+                else addLog(desc, 'info');
+            }
+
+            setStep(nextStepOverride !== null ? nextStepOverride : step + 1);
+          };
+
+          // --- End of Month Calculations ---
+          const calculateMay = () => {
+            let b = balance;
+            let cogsAdd = 0;
+            let fList = [...flour];
+            
+            if (fList.length > 0) cogsAdd = fList.shift();
+            
+            let salesAdd = shopSize === 'A' ? 8000 : (shopSize === 'B' ? 13000 : 20000);
+            
+            let billsAdd = 2900;
+
+            b = b - billsAdd + salesAdd;
+
+            let interestAdd = 0;
+            if (b < 0) {
+              interestAdd = Math.abs(b) * 0.10;
+              b -= interestAdd;
+            }
+
+            setBalance(b);
+            setFlour(fList);
+            setIs(prev => ({
+              ...prev,
+              cogs: prev.cogs + cogsAdd,
+              sales: prev.sales + salesAdd,
+              expBills: prev.expBills + billsAdd,
+              expInterest: prev.expInterest + interestAdd
+            }));
+
+            // Activity Logs for May
+            addLog(`May Sales Revenue (+$${salesAdd})`, 'income');
+            if (cogsAdd > 0) addLog(`Consumed 1 pack of Flour (-$${cogsAdd} Value)`, 'expense');
+            addLog(`Paid May Bills (-$${billsAdd})`, 'expense');
+            if (interestAdd > 0) addLog(`Paid Overdraft Interest Penalty (-$${interestAdd})`, 'warning');
+
+            setSummaryData({ salesAdd, billsAdd, cogsAdd, interestAdd });
+            setStep(18);
+          };
+
+          const calculateJune = () => {
+            let b = balance;
+            let cogsAdd = 0;
+            let fList = [...flour];
+            
+            if (fList.length > 0) cogsAdd = fList.shift();
+            
+            let salesAdd = shopSize === 'A' ? 2500 : (shopSize === 'B' ? 4000 : 6000);
+            if (state.adMonths === 2) salesAdd += 1000;
+            
+            let billsAdd = 2600;
+
+            b = b - billsAdd + salesAdd;
+
+            let interestAdd = 0;
+            if (b < 0) {
+              interestAdd = Math.abs(b) * 0.10;
+              b -= interestAdd;
+            }
+
+            setBalance(b);
+            setFlour(fList);
+            setIs(prev => ({
+              ...prev,
+              cogs: prev.cogs + cogsAdd,
+              sales: prev.sales + salesAdd,
+              expBills: prev.expBills + billsAdd,
+              expInterest: prev.expInterest + interestAdd
+            }));
+
+            // Activity Logs for June
+            addLog(`June Sales Revenue (+$${salesAdd})`, 'income');
+            if (cogsAdd > 0) addLog(`Consumed 1 pack of Flour (-$${cogsAdd} Value)`, 'expense');
+            addLog(`Paid June Bills (-$${billsAdd})`, 'expense');
+            if (interestAdd > 0) addLog(`Paid Overdraft Interest Penalty (-$${interestAdd})`, 'warning');
+
+            setSummaryData({ salesAdd, billsAdd, cogsAdd, interestAdd });
+            setStep(25);
+          };
+
+          // --- Components ---
+          const ChoiceButton = ({ title, desc, cost, onClick, color = "orange" }) => (
+            <button 
+              onClick={onClick} 
+              className={`w-full p-4 mb-3 border-2 border-${color}-300 rounded-xl hover:bg-${color}-50 text-left transition-all flex items-start gap-4 group bg-white shadow-sm`}
+            >
+              <div className="flex-1">
+                <div className="font-bold text-lg text-gray-800">{title}</div>
+                <div className="text-sm text-gray-500">{desc}</div>
+              </div>
+              {cost !== undefined && <div className={`font-mono font-bold text-lg ${cost > 0 ? 'text-red-500' : 'text-green-600'}`}>
+                {cost > 0 ? `-$${cost}` : `+$${Math.abs(cost)}`}
+              </div>}
+            </button>
+          );
+
+          const renderQuiz = (question, options, rewardAmount) => {
+            return (
+              <div className="space-y-4">
+                <h3 className="text-xl font-bold text-blue-800 bg-blue-100 p-4 rounded-xl flex items-center gap-3">
+                  <span className="text-2xl">🏆</span> BAFS Pop Quiz!
+                </h3>
+                <p className="text-lg font-medium">{question}</p>
+                
+                {quizState === null && options.map((opt, idx) => (
+                  <button 
+                    key={idx}
+                    onClick={() => {
+                      if (opt.correct) {
+                        setQuizState('correct');
+                        setBalance(b => b + rewardAmount);
+                        updateIs('otherRev', rewardAmount);
+                        addLog(`Passed Pop Quiz! (+$${rewardAmount})`, 'income');
+                      } else {
+                        setQuizState('incorrect');
+                        addLog('Failed Pop Quiz.', 'warning');
+                      }
+                    }}
+                    className="w-full p-4 text-left border-2 border-gray-200 rounded-xl hover:border-blue-400 hover:bg-blue-50 bg-white"
+                  >
+                    {opt.text}
+                  </button>
+                ))}
+
+                {quizState !== null && (
+                  <div className={`p-6 rounded-xl text-center animate-bounce-short ${quizState === 'correct' ? 'bg-green-100 border-2 border-green-400' : 'bg-red-100 border-2 border-red-400'}`}>
+                    {quizState === 'correct' ? (
+                      <><div className="text-5xl mb-2">✅</div><p className="font-bold text-green-700 text-xl">Correct!</p><p className="text-green-600 font-mono text-lg">+$ {rewardAmount}</p></>
+                    ) : (
+                      <><div className="text-5xl mb-2">❌</div><p className="font-bold text-red-700 text-xl">Incorrect!</p><p className="text-red-600">Better luck next time.</p></>
+                    )}
+                    <button onClick={() => { setQuizState(null); setStep(step + 1); }} className="mt-4 px-6 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 flex items-center justify-center gap-2 mx-auto">
+                      Continue <span className="text-xl leading-none">➡️</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          };
+
+          // --- Main Game Area Render ---
+          const renderStep = () => {
+            switch (step) {
+              case 0:
+                return (
+                  <div className="text-center space-y-6 mt-4">
+                    <div className="text-6xl animate-bounce">🍕</div>
+                    <h1 className="text-4xl font-extrabold text-orange-600">Tai O Pizza Shop</h1>
+                    <p className="text-lg text-gray-600">Welcome to your BAFS business simulation!</p>
+                    <div className="bg-orange-100 p-6 rounded-2xl text-left space-y-2 text-orange-800 border-2 border-orange-200 shadow-sm">
+                      <p><strong>Initial Capital:</strong> $40,000</p>
+                      <p><strong>Goal:</strong> Maximize Profit and Asset Value by June 30th.</p>
+                      <p><strong>Warning:</strong> 10% monthly interest on month-end negative bank balances!</p>
+                    </div>
+                    <button onClick={() => { addLog("Started May 1st.", "info"); setStep(1); }} className="w-full py-4 bg-orange-500 text-white rounded-xl font-bold text-xl hover:bg-orange-600 shadow-lg transform hover:-translate-y-1 transition-all">
+                      Start May 1st
+                    </button>
+                  </div>
+                );
+
+              case 1:
+                return (
+                  <div>
+                    <h2 className="text-2xl font-bold mb-4 flex items-center gap-2"><span className="text-3xl">📰</span> May: Market News</h2>
+                    <div className="bg-blue-50 p-6 rounded-xl border-2 border-blue-200 mb-6 text-blue-800 shadow-sm text-lg leading-relaxed">
+                      <strong>Inflation is rising!</strong> Consumer goods prices are increasing. Banks are lowering interest rates. The stock market is rising. Mainland visitors keep growing.
+                    </div>
+                    <button onClick={() => { addLog("Read May Market News.", "info"); setStep(2); }} className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold text-lg hover:bg-blue-700 shadow-md">
+                      Continue to Operations
+                    </button>
+                  </div>
+                );
+
+              case 2:
+                return (
+                  <div>
+                    <h2 className="text-2xl font-bold mb-4 flex items-center gap-2"><span className="text-3xl">🏪</span> May: Shop Rent</h2>
+                    <ChoiceButton title="Shop A (600 sq.ft)" desc="Low traffic, budget friendly." cost={5000} onClick={() => { setShopSize('A'); processTransaction(5000, 'expRent', 'Rented Shop A'); }} />
+                    <ChoiceButton title="Shop B (800 sq.ft)" desc="Medium traffic, balanced." cost={8000} onClick={() => { setShopSize('B'); processTransaction(8000, 'expRent', 'Rented Shop B'); }} />
+                    <ChoiceButton title="Shop C (1000 sq.ft)" desc="High traffic, premium location." cost={12000} onClick={() => { setShopSize('C'); processTransaction(12000, 'expRent', 'Rented Shop C'); }} />
+                  </div>
+                );
+
+              case 3:
+                return (
+                  <div>
+                    <h2 className="text-2xl font-bold mb-4 flex items-center gap-2"><span className="text-3xl">📄</span> May: Business License</h2>
+                    <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 shadow-sm">
+                      <p className="text-yellow-800">You must pay a mandatory government fee to operate.</p>
+                    </div>
+                    <ChoiceButton title="Pay License Fee" desc="Mandatory requirement." cost={1200} onClick={() => processTransaction(1200, 'expLicense', 'Paid Business License Fee')} color="yellow" />
+                  </div>
+                );
+
+              case 4:
+                return (
+                  <div>
+                    <h2 className="text-2xl font-bold mb-4 flex items-center gap-2"><span className="text-3xl">🚚</span> May: Delivery Method</h2>
+                    <ChoiceButton title="Purchase Lorry" desc="Asset purchase. Includes 3 months free petrol." cost={20000} onClick={() => processTransaction(20000, null, 'Purchased Delivery Lorry Asset', { hasLorry: true })} />
+                    <ChoiceButton title="Monthly Delivery Service" desc="Pay a monthly fee instead of buying." cost={2500} onClick={() => processTransaction(2500, 'expTransport', 'Subscribed to Monthly Delivery')} />
+                  </div>
+                );
+
+              case 5:
+                return renderQuiz("In the Balance Sheet, the Lorry you just considered is treated as...?", [
+                  { text: "Current Asset", correct: false },
+                  { text: "Non-current Asset", correct: true },
+                  { text: "Operating Expense", correct: false },
+                  { text: "Non-current Liability", correct: false }
+                ], 100);
+
+              case 6:
+                return (
+                  <div>
+                    <h2 className="text-2xl font-bold mb-4 flex items-center gap-2"><span className="text-3xl">📦</span> May: Inventory</h2>
+                    <p className="mb-4 font-bold text-gray-700">Purchase Flour (1 pack consumed per month):</p>
+                    <ChoiceButton title="Buy 1 Pack" desc="$500 per pack." cost={500} onClick={() => { setFlour([...flour, 500]); processTransaction(500, null, 'Bought 1 pack of Flour'); }} />
+                    <ChoiceButton title="Buy 2 Packs (10% Off)" desc="Bulk deal! $450 per pack." cost={900} onClick={() => { setFlour([...flour, 450, 450]); processTransaction(900, null, 'Bought 2 packs of Flour'); }} />
+                    <ChoiceButton title="Buy 3 Packs (20% Off)" desc="Mega deal! $400 per pack." cost={1200} onClick={() => { setFlour([...flour, 400, 400, 400]); processTransaction(1200, null, 'Bought 3 packs of Flour'); }} />
+                  </div>
+                );
+
+              case 7:
+                return renderQuiz("What is a disadvantage of holding too much inventory?", [
+                  { text: "Increases sales volume", correct: false },
+                  { text: "Improves business liquidity", correct: false },
+                  { text: "High storage costs and risk of obsolescence", correct: true }
+                ], 200);
+
+              case 8:
+                return (
+                  <div>
+                    <h2 className="text-2xl font-bold mb-4 flex items-center gap-2"><span className="text-3xl">🏆</span> May: Advertising</h2>
+                    <ChoiceButton title="No Advertising" desc="Rely on word of mouth." cost={0} onClick={() => processTransaction(0, null, 'Opted out of Advertising', { adMonths: 0 })} />
+                    <ChoiceButton title="1 Month Campaign" desc="Boost May sales." cost={2000} onClick={() => processTransaction(2000, 'expAds', 'Purchased 1-Month Ad Campaign', { adMonths: 1 })} />
+                    <ChoiceButton title="2 Month Campaign (20% Off)" desc="Boost May and June sales." cost={3200} onClick={() => processTransaction(3200, 'expAds', 'Purchased 2-Month Ad Campaign', { adMonths: 2 })} />
+                  </div>
+                );
+
+              case 9:
+                return renderQuiz("What is the main difference between Advertising and Sales Promotion?", [
+                  { text: "Advertising builds brand image; Sales Promotion boosts short-term sales.", correct: true },
+                  { text: "Advertising is free; Sales Promotion costs money.", correct: false },
+                  { text: "There is no difference in BAFS.", correct: false }
+                ], 200);
+
+              case 10:
+                return (
+                  <div>
+                    <h2 className="text-2xl font-bold mb-4 flex items-center gap-2"><span className="text-3xl">🩺</span> May: Insurance (Optional)</h2>
+                    <div className="space-y-4 mb-6">
+                      <label className="flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer hover:bg-gray-50 bg-white">
+                        <input type="checkbox" className="w-6 h-6" checked={insSelections.med} onChange={e => setInsSelections({ ...insSelections, med: e.target.checked })} />
+                        <div><div className="font-bold">Medical Insurance</div><div className="text-sm text-gray-500">Cost: $2500</div></div>
+                      </label>
+                      <label className="flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer hover:bg-gray-50 bg-white">
+                        <input type="checkbox" className="w-6 h-6" checked={insSelections.tra} onChange={e => setInsSelections({ ...insSelections, tra: e.target.checked })} />
+                        <div><div className="font-bold">Traffic Accident Insurance</div><div className="text-sm text-gray-500">Cost: $2000</div></div>
+                      </label>
+                    </div>
+                    <button 
+                      onClick={() => {
+                        let cost = (insSelections.med ? 2500 : 0) + (insSelections.tra ? 2000 : 0);
+                        processTransaction(cost, 'expInsurance', cost > 0 ? 'Purchased Insurance Policies' : 'Declined Insurance', { hasMedIns: insSelections.med, hasTraIns: insSelections.tra });
+                      }}
+                      className="w-full py-4 bg-orange-500 text-white rounded-xl font-bold text-lg hover:bg-orange-600 shadow-md"
+                    >
+                      Confirm Insurance
+                    </button>
+                  </div>
+                );
+
+              case 11:
+                return (
+                  <div>
+                    <h2 className="text-2xl font-bold mb-4 flex items-center gap-2"><span className="text-3xl">✨</span> May: Renovation</h2>
+                    <p className="mb-4 text-gray-700 text-lg bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                      The shop is outmoded. Would you like to join the renovation project?
+                    </p>
+                    <ChoiceButton title="Yes, Renovate" desc="Upgrade the shop." cost={5000} onClick={() => processTransaction(5000, 'expBills', 'Paid for Renovation', { hasRenovation: true })} />
+                    <ChoiceButton title="No, Skip" desc="Keep current appearance." cost={0} onClick={() => processTransaction(0, null, 'Skipped Renovation', { hasRenovation: false })} />
+                  </div>
+                );
+
+              case 12:
+                return (
+                  <div>
+                    <h2 className="text-2xl font-bold mb-4 flex items-center gap-2"><span className="text-3xl">👨‍🍳</span> May: Baking Class</h2>
+                    <p className="mb-4 text-gray-700 text-lg bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                      Would you like to join the baking class at a nearby Pizza Cooking Centre?
+                    </p>
+                    <ChoiceButton title="Join Class" desc="Learn new skills." cost={2000} onClick={() => processTransaction(2000, 'expBills', 'Paid for Baking Class', { hasBakingClass: true })} />
+                    <ChoiceButton title="Skip Class" desc="Save money." cost={0} onClick={() => processTransaction(0, null, 'Skipped Baking Class', { hasBakingClass: false })} />
+                  </div>
+                );
+
+              case 13:
+                return (
+                  <div>
+                    <h2 className="text-2xl font-bold mb-4 flex items-center gap-2"><span className="text-3xl">🏅</span> May: Shop Competition</h2>
+                    <p className="mb-4 text-gray-700 text-lg bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                      Would you like to join the Tai O Outstanding Shop competition?
+                    </p>
+                    <ChoiceButton title="Join Competition" desc="Test your skills." cost={3000} onClick={() => processTransaction(3000, 'expBills', 'Paid for Shop Competition', { joinedShopComp: true })} />
+                    <ChoiceButton title="Skip Competition" desc="Focus on normal operations." cost={0} onClick={() => processTransaction(0, null, 'Skipped Shop Competition', { joinedShopComp: false })} />
+                  </div>
+                );
+
+              case 14:
+                return (
+                  <div>
+                    <h2 className="text-2xl font-bold mb-4 flex items-center gap-2"><span className="text-3xl">🎪</span> May: Food Festival</h2>
+                    <p className="mb-4 text-gray-700 text-lg bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                      Would you like to join the Hong Kong Food Festival?
+                    </p>
+                    <ChoiceButton title="Join Festival" desc="Set up a booth." cost={2000} onClick={() => processTransaction(2000, 'expBills', 'Paid for Food Festival', { joinedFoodFest: true })} />
+                    <ChoiceButton title="Skip Festival" desc="Stay local." cost={0} onClick={() => processTransaction(0, null, 'Skipped Food Festival', { joinedFoodFest: false })} />
+                  </div>
+                );
+
+              case 15:
+                return (
+                  <div>
+                    <h2 className="text-2xl font-bold mb-4 flex items-center gap-2"><span className="text-3xl">⚠️</span> May: Medical Emergency!</h2>
+                    <div className="bg-red-50 p-4 rounded-xl border-2 border-red-200 mb-6 text-red-800 shadow-sm">
+                      You caught the flu! How do you want to treat it?
+                    </div>
+                    <ChoiceButton 
+                      title="Visit Clinic" 
+                      desc={state.hasMedIns ? "Free (Covered by Medical Insurance)" : "Pay out of pocket."} 
+                      cost={state.hasMedIns ? 0 : 480} 
+                      onClick={() => processTransaction(state.hasMedIns ? 0 : 480, 'expMedical', 'Visited Clinic for Flu', { chosePanadol: false })} 
+                    />
+                    <ChoiceButton 
+                      title="Take Panadol" 
+                      desc="Cheap, but risky." 
+                      cost={90} 
+                      onClick={() => processTransaction(90, 'expMedical', 'Bought Panadol for Flu', { chosePanadol: true })} 
+                    />
+                  </div>
+                );
+
+              case 16:
+                const wonTaiO = state.joinedShopComp && state.hasRenovation;
+                const wonFoodFest = state.joinedFoodFest && state.hasBakingClass;
+                const totalReward = (wonTaiO ? 6000 : 0) + (wonFoodFest ? 2300 : 0);
+
+                return (
+                  <div className="text-center space-y-6 mt-4">
+                    <h2 className="text-3xl font-bold mb-4 flex items-center justify-center gap-2"><span className="text-4xl">🏆</span> May Competition Results!</h2>
+                    
+                    <div className="space-y-4 text-left">
+                      <div className={`p-4 rounded-xl border-2 ${wonTaiO ? 'bg-yellow-50 border-yellow-400' : 'bg-gray-50 border-gray-200'}`}>
+                        <h3 className="font-bold text-lg">Tai O Outstanding Shop</h3>
+                        {wonTaiO ? (
+                          <p className="text-green-600 font-bold">🎉 Gold Medal! You renovated the shop and joined the competition. (+$6000)</p>
+                        ) : (
+                          <p className="text-gray-500">❌ Did not win. (Required: Join Competition + Renovation)</p>
+                        )}
+                      </div>
+
+                      <div className={`p-4 rounded-xl border-2 ${wonFoodFest ? 'bg-orange-50 border-orange-400' : 'bg-gray-50 border-gray-200'}`}>
+                        <h3 className="font-bold text-lg">Hong Kong Food Festival</h3>
+                        {wonFoodFest ? (
+                          <p className="text-green-600 font-bold">🎉 2nd Runner-up! You attended baking class and joined the festival. (+$2300)</p>
+                        ) : (
+                          <p className="text-gray-500">❌ Did not win. (Required: Join Festival + Baking Class)</p>
+                        )}
+                      </div>
+                    </div>
+
+                    <button 
+                      onClick={() => {
+                        if (totalReward > 0) {
+                          setBalance(b => b + totalReward);
+                          updateIs('otherRev', totalReward);
+                          addLog(`Collected Competition Rewards (+$${totalReward})`, 'income');
+                        } else {
+                          addLog("Reviewed competition results.", "info");
+                        }
+                        setStep(17);
+                      }} 
+                      className="w-full py-4 bg-yellow-500 text-white rounded-xl font-bold text-xl hover:bg-yellow-600 shadow-md"
+                    >
+                      {totalReward > 0 ? `Claim Rewards (+$${totalReward})` : "Continue"}
+                    </button>
+                  </div>
+                );
+
+              case 17:
+                return (
+                  <div className="text-center space-y-6 mt-10">
+                    <h2 className="text-3xl font-bold text-gray-800">End of May</h2>
+                    <p className="text-lg text-gray-600">It's time to close the books for May.</p>
+                    <div className="bg-white border border-gray-200 p-6 rounded-xl text-left text-sm space-y-2 shadow-sm">
+                      <p>✔️ Pay Mandatory Monthly Bills ($2900)</p>
+                      <p>✔️ Calculate Flour Consumption</p>
+                      <p>✔️ Calculate Sales Revenue</p>
+                      <p>✔️ Calculate Interest on negative balance</p>
+                    </div>
+                    <button onClick={calculateMay} className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold text-xl hover:bg-blue-700 shadow-lg">
+                      Calculate May Results
+                    </button>
+                  </div>
+                );
+
+              case 18:
+                return (
+                  <div className="space-y-4">
+                    <h2 className="text-2xl font-bold mb-2 flex items-center gap-2"><span className="text-3xl">✅</span> May Results</h2>
+                    <div className="bg-white p-6 rounded-xl shadow-sm border-2 border-green-200 space-y-3 font-mono">
+                      <div className="flex justify-between text-green-600 font-bold"><span>Sales Revenue:</span><span>+${summaryData.salesAdd}</span></div>
+                      <div className="flex justify-between text-red-500"><span>Cost of Goods (Flour):</span><span>-${summaryData.cogsAdd}</span></div>
+                      <div className="flex justify-between text-red-500"><span>Monthly Bills:</span><span>-${summaryData.billsAdd}</span></div>
+                      {summaryData.interestAdd > 0 && <div className="flex justify-between text-red-500"><span>Interest Penalty:</span><span>-${summaryData.interestAdd}</span></div>}
+                    </div>
+                    <button onClick={() => { addLog("Started June.", "info"); setStep(19); }} className="w-full py-4 mt-6 bg-orange-500 text-white rounded-xl font-bold text-xl hover:bg-orange-600 shadow-md flex items-center justify-center gap-2">
+                      Start June <span className="text-xl leading-none">➡️</span>
+                    </button>
+                  </div>
+                );
+
+              case 19:
+                return (
+                  <div>
+                    <h2 className="text-2xl font-bold mb-4 flex items-center gap-2"><span className="text-3xl">📰</span> June: Market News</h2>
+                    <div className="bg-blue-50 p-6 rounded-xl border-2 border-blue-200 mb-6 text-blue-800 shadow-sm text-lg leading-relaxed">
+                      <strong>Summer holiday is coming!</strong> The retail industry is booming. However, the flu outbreak worsens.
+                    </div>
+                    <button onClick={() => { addLog("Read June Market News.", "info"); setStep(20); }} className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold text-lg hover:bg-blue-700 shadow-md">
+                      Continue to Operations
+                    </button>
+                  </div>
+                );
+
+              case 20:
+                return (
+                  <div>
+                    <h2 className="text-2xl font-bold mb-4 flex items-center gap-2"><span className="text-3xl">🏪</span> June: Shop Rent</h2>
+                    <p className="font-bold mb-3">Choose your shop for June:</p>
+                    <ChoiceButton title="Shop A (600 sq.ft)" desc="Stay or move to small." cost={5000} onClick={() => { setShopSize('A'); processTransaction(5000, 'expRent', 'Rented Shop A for June'); }} />
+                    <ChoiceButton title="Shop B (800 sq.ft)" desc="Stay or move to medium." cost={8000} onClick={() => { setShopSize('B'); processTransaction(8000, 'expRent', 'Rented Shop B for June'); }} />
+                    <ChoiceButton title="Shop C (1000 sq.ft)" desc="Stay or move to large." cost={12000} onClick={() => { setShopSize('C'); processTransaction(12000, 'expRent', 'Rented Shop C for June'); }} />
+                  </div>
+                );
+
+              case 21:
+                if (flour.length === 0) {
+                  return (
+                    <div>
+                      <h2 className="text-2xl font-bold mb-4 flex items-center gap-2 text-red-600"><span className="text-3xl">⚠️</span> June Inventory Alert</h2>
+                      <div className="bg-red-50 p-4 rounded-xl border-2 border-red-200 mb-6 text-red-800 shadow-sm">
+                        You have NO FLOUR left! Inflation hit hard. The price is now $1000 per pack with no discounts. You must buy 1 pack for June.
+                      </div>
+                      <ChoiceButton title="Buy Emergency Flour" desc="Mandatory purchase." cost={1000} onClick={() => { setFlour([...flour, 1000]); processTransaction(1000, null, 'Bought Emergency Flour'); }} />
+                    </div>
+                  );
+                } else {
+                  return (
+                    <div>
+                      <h2 className="text-2xl font-bold mb-4 flex items-center gap-2"><span className="text-3xl">📦</span> June Inventory</h2>
+                      <div className="bg-green-50 p-4 rounded-xl border-2 border-green-200 mb-6 text-green-800 shadow-sm">
+                        You have enough flour for June! (Flour price has skyrocketed to $1000/pack).
+                      </div>
+                      <ChoiceButton title="Skip Purchase" desc="Use existing inventory." cost={0} onClick={() => processTransaction(0, null, 'Skipped Flour Purchase')} />
+                      <ChoiceButton title="Buy Extra Flour" desc="Just in case. $1000/pack." cost={1000} onClick={() => { setFlour([...flour, 1000]); processTransaction(1000, null, 'Bought Extra Flour'); }} />
+                    </div>
+                  );
+                }
+
+              case 22:
+                if (!state.hasLorry) {
+                  return (
+                    <div>
+                      <h2 className="text-2xl font-bold mb-4 flex items-center gap-2"><span className="text-3xl">🚚</span> June Transport</h2>
+                      <div className="bg-yellow-50 p-4 rounded-xl border-2 border-yellow-200 mb-6 text-yellow-800 shadow-sm">
+                        Because you don't own a lorry, monthly delivery fees have increased by 50%!
+                      </div>
+                      <ChoiceButton title="Pay Monthly Fee" desc="Increased rate." cost={3750} onClick={() => processTransaction(3750, 'expTransport', 'Paid Increased Monthly Delivery Fee')} />
+                    </div>
+                  );
+                } else {
+                  let medCost = (state.hasMedIns || state.hasTraIns) ? 0 : 4500;
+                  return (
+                    <div>
+                      <h2 className="text-2xl font-bold mb-4 flex items-center gap-2 text-red-600"><span className="text-3xl">⚠️</span> Lorry Crash!</h2>
+                      <div className="bg-red-50 p-4 rounded-xl border-2 border-red-200 mb-6 text-red-800 space-y-2 shadow-sm">
+                        <p><strong>Oh no!</strong> Your lorry crashed. Its value is now $0 (Total Loss of $20,000).</p>
+                        <p>You also incurred medical fees of $4500.</p>
+                        {medCost === 0 && <p className="text-green-600 font-bold">Good news: Your insurance covers the medical fee!</p>}
+                      </div>
+                      <button 
+                        onClick={() => {
+                          setBalance(b => b - medCost);
+                          updateIs('expTransport', 20000); 
+                          if (medCost > 0) updateIs('expMedical', medCost);
+                          setState(prev => ({...prev, hasLorry: false}));
+                          
+                          addLog('Lorry crashed! Total loss.', 'warning');
+                          if (medCost > 0) addLog(`Paid Medical Fees for Crash (-$${medCost})`, 'expense');
+                          else addLog('Medical Fees for Crash fully covered by Insurance!', 'info');
+                          
+                          setStep(23);
+                        }}
+                        className="w-full py-4 bg-red-500 text-white rounded-xl font-bold text-lg hover:bg-red-600 shadow-md"
+                      >
+                        Accept Fate {medCost > 0 && `(-$${medCost} Medical)`}
+                      </button>
+                    </div>
+                  );
+                }
+
+              case 23:
+                if (state.chosePanadol && !state.hasMedIns) {
+                  return (
+                    <div>
+                      <h2 className="text-2xl font-bold mb-4 flex items-center gap-2 text-red-600"><span className="text-3xl">🩺</span> Flu Penalty!</h2>
+                      <div className="bg-red-50 p-4 rounded-xl border-2 border-red-200 mb-6 text-red-800 shadow-sm">
+                        Because you chose Panadol in May and didn't buy medical insurance, your flu worsened into a severe infection! You must pay huge hospital fees.
+                      </div>
+                      <ChoiceButton title="Pay Hospital Fees" desc="Ouch." cost={10000} onClick={() => processTransaction(10000, 'expMedical', 'Paid Severe Hospital Fees')} />
+                    </div>
+                  );
+                } else {
+                  return (
+                    <div>
+                      <h2 className="text-2xl font-bold mb-4 flex items-center gap-2"><span className="text-3xl">✅</span> Health Check</h2>
+                      <div className="bg-green-50 p-4 rounded-xl border-2 border-green-200 mb-6 text-green-800 shadow-sm">
+                        You avoided the severe flu outbreak! Good choices in May paid off.
+                      </div>
+                      <button onClick={() => { addLog("Avoided severe flu.", "info"); setStep(24); }} className="w-full py-4 bg-green-500 text-white rounded-xl font-bold text-lg hover:bg-green-600 flex justify-center gap-2 items-center shadow-md">
+                        Continue <span className="text-xl leading-none">➡️</span>
+                      </button>
+                    </div>
+                  );
+                }
+
+              case 24:
+                return (
+                  <div className="text-center space-y-6 mt-10">
+                    <h2 className="text-3xl font-bold text-gray-800">End of June</h2>
+                    <p className="text-lg text-gray-600">The simulation is ending. Let's calculate the final month.</p>
+                    <div className="bg-white border border-gray-200 p-6 rounded-xl text-left text-sm space-y-2 shadow-sm">
+                      <p>✔️ Pay Mandatory Monthly Bills ($2600)</p>
+                      <p>✔️ Calculate Flour Consumption</p>
+                      <p>✔️ Calculate June Sales {state.adMonths === 2 ? '(+ $1000 Ad Bonus)' : ''}</p>
+                      <p>✔️ Calculate Final Interest</p>
+                    </div>
+                    <button onClick={calculateJune} className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold text-xl hover:bg-blue-700 shadow-lg">
+                      Calculate June Results
+                    </button>
+                  </div>
+                );
+
+              case 25:
+                return (
+                  <div className="space-y-4">
+                    <h2 className="text-2xl font-bold mb-2 flex items-center gap-2"><span className="text-3xl">✅</span> June Results</h2>
+                    <div className="bg-white p-6 rounded-xl shadow-sm border-2 border-green-200 space-y-3 font-mono">
+                      <div className="flex justify-between text-green-600 font-bold"><span>Sales Revenue:</span><span>+${summaryData.salesAdd}</span></div>
+                      <div className="flex justify-between text-red-500"><span>Cost of Goods (Flour):</span><span>-${summaryData.cogsAdd}</span></div>
+                      <div className="flex justify-between text-red-500"><span>Monthly Bills:</span><span>-${summaryData.billsAdd}</span></div>
+                      {summaryData.interestAdd > 0 && <div className="flex justify-between text-red-500"><span>Interest Penalty:</span><span>-${summaryData.interestAdd}</span></div>}
+                    </div>
+                    <button onClick={() => { addLog("Simulation Finished.", "info"); setStep(26); }} className="w-full py-4 mt-6 bg-purple-600 text-white rounded-xl font-bold text-xl hover:bg-purple-700 shadow-lg">
+                      View Final Game Score
+                    </button>
+                  </div>
+                );
+
+              case 26:
+                const finalNetProfit = (is.sales - is.cogs) + is.otherRev - (is.expRent + is.expLicense + is.expTransport + is.expAds + is.expInsurance + is.expBills + is.expMedical + is.expInterest);
+                const assetFlourValue = flour.length * 600;
+                const totalAssets = Math.max(0, balance) + assetFlourValue; 
+                const finalScore = finalNetProfit + totalAssets;
+
+                return (
+                  <div className="text-center space-y-6 mt-4 pb-10">
+                    <h2 className="text-4xl font-extrabold text-purple-700 mb-2">Game Over!</h2>
+                    
+                    <div className="bg-white shadow-sm p-6 rounded-2xl border-4 border-purple-200 text-left space-y-4">
+                      <h3 className="text-xl font-bold border-b border-purple-200 pb-2">Final Wealth Breakdown</h3>
+                      <div className="flex justify-between text-lg"><span>Total Net Profit:</span><span className={finalNetProfit < 0 ? 'text-red-500' : 'text-green-600'}>${finalNetProfit}</span></div>
+                      <div className="flex justify-between text-lg"><span>Remaining Cash:</span><span className={balance < 0 ? 'text-red-500' : ''}>${balance}</span></div>
+                      <div className="flex justify-between text-lg"><span>Asset Value (Flour @$600):</span><span>${assetFlourValue}</span></div>
+                      <div className="flex justify-between text-lg text-gray-400"><span>Asset Value (Lorry):</span><span>$0</span></div>
+                      
+                      <div className="pt-4 mt-4 border-t-2 border-purple-300 flex justify-between text-2xl font-black text-purple-800">
+                        <span>Final Score:</span>
+                        <span>${finalScore}</span>
+                      </div>
+                      <p className="text-sm text-center text-purple-600 pt-2">(Score = Net Profit + Total Assets)</p>
+                    </div>
+
+                    <button onClick={() => window.location.reload()} className="px-8 py-3 bg-gray-800 text-white rounded-xl font-bold hover:bg-gray-700 shadow-md">
+                      Play Again
+                    </button>
+                  </div>
+                );
+
+              default:
+                return <div>Error: Unknown Step</div>;
+            }
+          };
+
+          const grossProfit = is.sales - is.cogs;
+          const totalExpenses = is.expRent + is.expLicense + is.expTransport + is.expAds + is.expInsurance + is.expBills + is.expMedical + is.expInterest;
+          const netProfit = grossProfit + is.otherRev - totalExpenses;
+
+          return (
+            <div className="flex flex-col md:flex-row h-screen">
+              
+              {/* Left Panel - Game Area & Activity Log */}
+              <div className="w-full md:w-1/2 p-4 md:p-6 flex flex-col h-full bg-orange-50 md:bg-transparent border-r border-orange-200">
+                
+                {/* Top Half: Game Progress Area */}
+                <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 mb-4">
+                  <div className="max-w-xl mx-auto py-4">
+                    {renderStep()}
+                  </div>
+                </div>
+
+                {/* Bottom Half: Activity Log */}
+                <div className="h-[35%] min-h-[220px] bg-white rounded-xl border-2 border-gray-200 shadow-sm flex flex-col">
+                  <div className="bg-gray-100 px-4 py-3 border-b-2 border-gray-200 font-bold text-gray-700 flex justify-between items-center rounded-t-lg">
+                    <div className="flex items-center gap-2 text-sm uppercase tracking-wider">
+                      <span>📜</span> <span>Activity Log</span>
+                    </div>
+                    <span className="text-xs font-normal bg-gray-200 text-gray-600 px-3 py-1 rounded-full">{logs.length} Events</span>
+                  </div>
+                  <div className="flex-1 overflow-y-auto p-3 space-y-2 custom-scrollbar bg-gray-50 rounded-b-lg">
+                    {[...logs].reverse().map((log, index) => {
+                      let styleClasses = 'border-blue-400 bg-blue-50 text-blue-800'; // default info
+                      if (log.type === 'expense') styleClasses = 'border-red-400 bg-red-50 text-red-800';
+                      else if (log.type === 'income') styleClasses = 'border-green-400 bg-green-50 text-green-800';
+                      else if (log.type === 'warning') styleClasses = 'border-yellow-500 bg-yellow-50 text-yellow-900';
+
+                      return (
+                        <div key={index} className={`p-2 rounded-lg text-sm border-l-4 shadow-sm flex items-start gap-2 ${styleClasses}`}>
+                           <span className="font-mono text-xs opacity-60 mt-0.5 whitespace-nowrap">[{log.time}]</span>
+                           <span className="font-medium">{log.msg}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+                
+              </div>
+
+              {/* Right Panel - Dashboard */}
+              <div className="w-full md:w-1/2 p-6 md:p-8 bg-white shadow-2xl flex flex-col z-10 overflow-y-auto custom-scrollbar">
+                
+                {/* Top Indicators */}
+                <div className="flex gap-4 mb-6">
+                  <div className={`flex-1 p-4 rounded-xl border-2 flex items-center justify-between shadow-sm ${balance < 0 ? 'bg-red-50 border-red-300' : 'bg-green-50 border-green-300'}`}>
+                    <div>
+                      <div className="text-sm font-bold text-gray-500 uppercase tracking-wider">Bank Balance</div>
+                      <div className={`text-2xl font-black font-mono ${balance < 0 ? 'text-red-600' : 'text-green-700'}`}>
+                        ${balance}
+                      </div>
+                    </div>
+                    <div className="text-4xl">💵</div>
+                  </div>
+
+                  <div className="flex-1 p-4 rounded-xl border-2 bg-yellow-50 border-yellow-300 shadow-sm flex items-center justify-between">
+                    <div>
+                      <div className="text-sm font-bold text-gray-500 uppercase tracking-wider">Flour Inv.</div>
+                      <div className="text-2xl font-black font-mono text-yellow-700">
+                        {flour.length} <span className="text-sm">packs</span>
+                      </div>
+                    </div>
+                    <div className="text-3xl">{Array(Math.min(flour.length, 3)).fill('🌾').join('')}{flour.length > 3 ? '+' : ''}</div>
+                  </div>
+                </div>
+
+                {/* Income Statement */}
+                <div className="flex-1 bg-gray-50 rounded-2xl border-2 border-gray-200 p-6 md:p-8 flex flex-col shadow-inner">
+                  <h2 className="text-xl md:text-2xl font-bold mb-6 text-center text-gray-800 border-b-2 border-gray-300 pb-4 tracking-widest uppercase">Live Income Statement</h2>
+                  
+                  <div className="space-y-2 text-sm md:text-base font-mono flex-1">
+                    
+                    <div className="flex justify-between text-green-700 font-bold">
+                      <span>Sales Revenue</span><span>${is.sales}</span>
+                    </div>
+                    
+                    <div className="flex justify-between text-red-500 border-b border-gray-300 pb-2">
+                      <span>Less: Cost of Goods Sold</span><span>(${is.cogs})</span>
+                    </div>
+                    
+                    <div className="flex justify-between font-bold text-gray-800 pt-2 pb-4">
+                      <span>Gross Profit</span><span>${grossProfit}</span>
+                    </div>
+
+                    <div className="flex justify-between text-blue-600 font-bold border-b border-gray-300 pb-2">
+                      <span>Add: Other Rev. (Prizes)</span><span>${is.otherRev}</span>
+                    </div>
+
+                    <div className="font-bold text-gray-800 pt-4 mb-2 underline">Less: Expenses</div>
+                    
+                    <div className="flex justify-between ml-4 text-gray-600"><span>Rent</span><span>${is.expRent}</span></div>
+                    <div className="flex justify-between ml-4 text-gray-600"><span>License</span><span>${is.expLicense}</span></div>
+                    <div className="flex justify-between ml-4 text-gray-600"><span>Transport (incl. Loss)</span><span>${is.expTransport}</span></div>
+                    <div className="flex justify-between ml-4 text-gray-600"><span>Advertising</span><span>${is.expAds}</span></div>
+                    <div className="flex justify-between ml-4 text-gray-600"><span>Insurance</span><span>${is.expInsurance}</span></div>
+                    <div className="flex justify-between ml-4 text-gray-600"><span>Bills (& Misc. Inv.)</span><span>${is.expBills}</span></div>
+                    <div className="flex justify-between ml-4 text-gray-600"><span>Medical</span><span>${is.expMedical}</span></div>
+                    <div className="flex justify-between ml-4 text-gray-600 border-b border-gray-300 pb-2"><span>Interest</span><span>${is.expInterest}</span></div>
+
+                    <div className="flex justify-between font-bold text-gray-800 pt-2 pb-4">
+                      <span>Total Expenses</span><span>${totalExpenses}</span>
+                    </div>
+
+                  </div>
+
+                  <div className={`mt-auto flex justify-between font-black text-xl md:text-2xl pt-4 border-t-4 border-double border-gray-800 ${netProfit < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                    <span>Net Profit</span>
+                    <span>{netProfit < 0 ? `-$${Math.abs(netProfit)}` : `$${netProfit}`}</span>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+          );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
